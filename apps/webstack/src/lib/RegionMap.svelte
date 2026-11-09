@@ -11,7 +11,51 @@
 
 	const W = 530;
 	const H = 560;
-	const MAX = 8;
+	const MAX = 16;
+
+	// Bounding box per region, ignoring tiny far-off islands (rings < 5% of the biggest ring's box).
+	const bboxes = new Map(
+		regionPaths.map(({ name, d }) => {
+			const rings = d
+				.split('M')
+				.filter(Boolean)
+				.map((r) => {
+					const n = r.match(/-?\d+\.?\d*/g)!.map(Number);
+					const xs = n.filter((_, i) => i % 2 === 0);
+					const ys = n.filter((_, i) => i % 2 === 1);
+					const b = {
+						x0: Math.min(...xs),
+						x1: Math.max(...xs),
+						y0: Math.min(...ys),
+						y1: Math.max(...ys)
+					};
+					return { ...b, a: (b.x1 - b.x0) * (b.y1 - b.y0) };
+				});
+			const big = Math.max(...rings.map((r) => r.a));
+			const keep = rings.filter((r) => r.a >= big * 0.05);
+			return [
+				name,
+				{
+					x0: Math.min(...keep.map((r) => r.x0)),
+					x1: Math.max(...keep.map((r) => r.x1)),
+					y0: Math.min(...keep.map((r) => r.y0)),
+					y1: Math.max(...keep.map((r) => r.y1))
+				}
+			];
+		})
+	);
+	let smooth = $state(false);
+
+	// Animate so the selected region is centred and fits the frame (with margin).
+	$effect(() => {
+		const b = bboxes.get(selectedName);
+		if (!b) return;
+		const ns = clamp(0.75 * Math.min(W / (b.x1 - b.x0), H / (b.y1 - b.y0)), 1, MAX);
+		smooth = true;
+		tx = clamp(W / 2 - ((b.x0 + b.x1) / 2) * ns, W * (1 - ns), 0);
+		ty = clamp(H / 2 - ((b.y0 + b.y1) / 2) * ns, H * (1 - ns), 0);
+		s = ns;
+	});
 
 	let svg: SVGSVGElement;
 	let s = $state(1);
@@ -27,6 +71,7 @@
 
 	// Zoom by factor k around viewBox point (px, py), keeping the map inside the frame.
 	function zoom(k: number, px = W / 2, py = H / 2) {
+		smooth = false;
 		const ns = clamp(s * k, 1, MAX);
 		tx = clamp(px - ((px - tx) * ns) / s, W * (1 - ns), 0);
 		ty = clamp(py - ((py - ty) * ns) / s, H * (1 - ns), 0);
@@ -60,6 +105,7 @@
 		const dy = e.clientY - drag.y;
 		if (!moved && Math.hypot(dx, dy) < 4) return;
 		moved = true;
+		smooth = false;
 		const r = svg.getBoundingClientRect();
 		tx = clamp(tx + (dx * W) / r.width, W * (1 - s), 0);
 		ty = clamp(ty + (dy * H) / r.height, H * (1 - s), 0);
@@ -83,7 +129,7 @@
 			onpointerup={() => (drag = null)}
 			onpointerleave={() => (drag = null)}
 		>
-			<g transform="translate({tx} {ty}) scale({s})">
+			<g class="view" class:smooth style="transform: translate({tx}px, {ty}px) scale({s})">
 				{#each regionPaths as p (p.name)}
 					<g
 						class="region"
@@ -126,6 +172,12 @@
 		height: auto;
 		cursor: grab;
 		overflow: hidden;
+	}
+	.view {
+		transform-origin: 0 0;
+	}
+	.view.smooth {
+		transition: transform 0.6s ease-in-out;
 	}
 	.region {
 		cursor: pointer;
