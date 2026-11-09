@@ -25,7 +25,8 @@
 				errorMessage = data.message || '알 수 없는 오류가 발생했습니다. 다시 시도해주세요.';
 				return;
 			}
-			errorMessage = '서버에 연결할 수 없습니다. 페이지를 새로 고침해주세요.';
+			const err = await res.json().catch(() => null);
+			errorMessage = err?.message || '서버에 연결할 수 없습니다. 페이지를 새로 고침해주세요.';
 		} catch {
 			errorMessage = '네트워크 오류입니다. 연결 상태를 확인하고 다시 시도해주세요.';
 		}

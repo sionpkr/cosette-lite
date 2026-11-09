@@ -2,6 +2,7 @@ import type { RequestHandler } from './$types';
 import { config } from 'config';
 import { logger } from '$lib/logger';
 import { BotResult } from '$lib/DiscordTypes';
+import { checkLink, saveLink, sheetEnabled } from '$lib/sheet';
 import { getGuildMember, joinDiscordServer, modifyGuildMember, MemberResult } from '$lib/discord';
 
 export const POST = (async ({ locals }) => {
@@ -32,6 +33,46 @@ export const POST = (async ({ locals }) => {
 	}
 	const requiredRoles = [verifiedRole.id, regionRoleId!];
 
+	const osuId = locals.session.data.osu?.id ?? '';
+	const discordName = locals.session.data.discord?.username ?? '';
+
+	// Link registry (Google Sheet). If the sheet is down, fail open: still grant roles.
+	let rowNumber: number | null = null;
+	const useSheet = sheetEnabled() && !!osuId;
+	if (useSheet) {
+		try {
+			const check = await checkLink(discordId, osuId);
+			if (!check.ok) {
+				const message =
+					check.reason === 'osu-taken'
+						? '이 osu! 계정은 이미 다른 Discord 계정에 연동되어 있습니다.'
+						: '이 Discord 계정은 이미 다른 osu! 계정에 연동되어 있습니다.';
+				logger.warn(`Blocked link ${discordId}/${osuId}: ${check.reason}`);
+				return new Response(JSON.stringify({ result: 'error', message }));
+			}
+			rowNumber = check.rowNumber;
+		} catch (e) {
+			logger.error(e);
+		}
+	}
+
+	const markDone = async () => {
+		if (useSheet) {
+			try {
+				await saveLink(
+					{ discordId, osuId, osuUsername, discordName, regionRoleId: regionRoleId! },
+					rowNumber
+				);
+			} catch (e) {
+				logger.error(e);
+			}
+		}
+		await locals.session.update((d) => {
+			d.isReady = true;
+			return d;
+		});
+	};
+
 	const memberCheck = await getGuildMember(discordId);
 
 	if (memberCheck.result === MemberResult.Found) {
@@ -46,10 +87,7 @@ export const POST = (async ({ locals }) => {
 		const addRoleRes = await modifyGuildMember(discordId, osuUsername, mergedRoles);
 
 		if (addRoleRes.result === BotResult.Success) {
-			await locals.session.update((d) => {
-				d.isReady = true;
-				return d;
-			});
+			await markDone();
 			return new Response(JSON.stringify({ result: 'success' }));
 		}
 
@@ -86,10 +124,7 @@ export const POST = (async ({ locals }) => {
 		const addRoleRes = await modifyGuildMember(discordId, osuUsername, requiredRoles);
 
 		if (addRoleRes.result === BotResult.Success) {
-			await locals.session.update((d) => {
-				d.isReady = true;
-				return d;
-			});
+			await markDone();
 			return new Response(JSON.stringify({ result: 'success' }));
 		}
 
