@@ -82,6 +82,7 @@ export const GET = (async ({ url, locals }) => {
 	await locals.session.update((data) => {
 		if (!data.discord) data.discord = {};
 		data.discord.id = meData.user.id;
+		data.discord.username = meData.user.username;
 		data.discord.accessToken = tokens.access_token;
 		data.isReady = false;
 		return data;

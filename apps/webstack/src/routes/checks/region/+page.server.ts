@@ -8,7 +8,9 @@ export const load = (async ({ locals }) => {
 
 	return {
 		username: locals.session.data.osu.username,
-		osuId: locals.session.data.osu.id
+		osuId: locals.session.data.osu.id,
+		discordName: locals.session.data.discord.username,
+		discordId: locals.session.data.discord.id
 	};
 }) satisfies PageServerLoad;
 

@@ -17,6 +17,8 @@
 	const idByName = new Map(regions.map((r) => [r.name, r.id]));
 
 	let selectedId = $state('');
+	let dialog: HTMLDialogElement;
+	const selectedName = $derived(regions.find((r) => r.id === selectedId)?.name ?? '');
 </script>
 
 <div class="start">
@@ -24,6 +26,10 @@
 		<p class="right-align">
 			현재 osu! 계정: {data.username || ''} ({data.osuId || ''})
 			<a href="/logout"><strong>로그아웃</strong></a>
+		</p>
+		<p class="right-align">
+			현재 Discord 계정: {data.discordName || data.discordId} ({data.discordId})
+			<a href="/logout/discord"><strong>로그아웃</strong></a>
 		</p>
 	</div>
 	<div>
@@ -48,13 +54,29 @@
 				{/each}
 			</ul>
 			{#if form?.error}<p style="color:#FF4C4C; font-weight:bold;">{form.error}</p>{/if}
-			<button type="submit" class="flex button discord" disabled={!selectedId}>
+			<button
+				type="button"
+				class="flex button discord"
+				disabled={!selectedId}
+				onclick={() => dialog.showModal()}
+			>
 				서버 참가 및 역할 받기
 			</button>
 		</div>
 		<div class="map-col">
 			<RegionMap {idByName} bind:selectedId />
 		</div>
+		<dialog bind:this={dialog}>
+			<h2>최종 확인</h2>
+			<ul>
+				<li>osu! 계정: {data.username} ({data.osuId})</li>
+				<li>Discord 계정: {data.discordName || data.discordId} ({data.discordId})</li>
+				<li>지역: {selectedName}</li>
+			</ul>
+			<p><strong>정말 진행하시겠습니까?</strong></p>
+			<button type="button" onclick={() => dialog.close()}>취소</button>
+			<button type="submit">확인</button>
+		</dialog>
 	</form>
 </div>
 

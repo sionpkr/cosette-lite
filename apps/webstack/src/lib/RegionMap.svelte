@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { regionPaths, regionMembers, REGION_MAP_VIEWBOX } from '$lib/regionMap';
+	import { regionPaths, REGION_MAP_VIEWBOX } from '$lib/regionMap';
 
 	interface Props {
 		/** region name -> role id (only selectable regions) */
@@ -85,8 +85,8 @@
 		>
 			<g transform="translate({tx} {ty}) scale({s})">
 				{#each regionPaths as p (p.name)}
-					<path
-						d={p.d}
+					<g
+						class="region"
 						class:selected={idByName.get(p.name) === selectedId}
 						role="button"
 						tabindex="0"
@@ -97,7 +97,11 @@
 						onblur={() => (hoverName = '')}
 						onclick={() => pick(p.name)}
 						onkeydown={(e) => e.key === 'Enter' && (selectedId = idByName.get(p.name) ?? '')}
-					/>
+					>
+						<!-- outline layer: wide stroke; fill layer on top hides it along inner city seams -->
+						<path d={p.d} class="outline" />
+						<path d={p.d} class="fill" />
+					</g>
 				{/each}
 			</g>
 		</svg>
@@ -107,9 +111,6 @@
 		</div>
 	</div>
 	<p class="map-label">{label || ' '}</p>
-	<p class="map-members">
-		{#if regionMembers[label]}{regionMembers[label].join(', ')}{:else}&nbsp;{/if}
-	</p>
 </div>
 
 <style>
@@ -126,22 +127,31 @@
 		cursor: grab;
 		overflow: hidden;
 	}
-	path {
-		fill: #6b7280;
-		stroke: #6b7280; /* same as fill: hides borders between cities of one region */
-		stroke-width: 0.6;
-		stroke-linejoin: round;
+	.region {
 		cursor: pointer;
 		outline: none;
+		--c: #6b7280;
 	}
-	path:hover,
-	path:focus-visible {
-		fill: #f472b6;
-		stroke: #f472b6;
+	.region:hover,
+	.region:focus-visible {
+		--c: #f472b6;
 	}
-	path.selected {
-		fill: #5865f2;
-		stroke: #5865f2;
+	.region.selected {
+		--c: #5865f2;
+	}
+	path {
+		vector-effect: non-scaling-stroke; /* constant line width at any zoom */
+		stroke-linejoin: round;
+	}
+	.outline {
+		fill: #fff;
+		stroke: #fff;
+		stroke-width: 3.5;
+	}
+	.fill {
+		fill: var(--c);
+		stroke: var(--c);
+		stroke-width: 1.5;
 	}
 	.zoom {
 		position: absolute;
@@ -161,9 +171,5 @@
 	.map-label {
 		font-weight: bold;
 		min-height: 1.5em;
-	}
-	.map-members {
-		font-size: 0.85rem;
-		min-height: 2.6em;
 	}
 </style>
