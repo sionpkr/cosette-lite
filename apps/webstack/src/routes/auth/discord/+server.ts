@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
 import { env as pubEnv } from '$env/dynamic/public';
 import { redirect } from '@sveltejs/kit';
+import { config } from 'config';
 
 /**
  * Generate the url which the user will be directed to in order to approve the
@@ -20,7 +21,13 @@ function getOAuthUrl() {
 }
 
 // Write cookie for the state which will be used to compare later for the linked role stuff.
-export const GET = (async ({ locals }) => {
+export const GET = (async ({ locals, url: reqUrl }) => {
+	// Region is mandatory: must be a configured role other than Verified.
+	const regionRoleId = reqUrl.searchParams.get('region');
+	if (!config.discord.roles.some((r) => r.id === regionRoleId && r.name !== 'Verified')) {
+		redirect(302, '/checks/discord');
+	}
+
 	if (!(locals.session.data.osu?.id || locals.session.data.osu?.username)) {
 		locals.session.set({
 			error:
@@ -34,7 +41,8 @@ export const GET = (async ({ locals }) => {
 
 	await locals.session.update((data) => {
 		data.discord = {
-			state: state
+			state: state,
+			regionRoleId: regionRoleId!
 		};
 		return data;
 	});

@@ -21,35 +21,26 @@
 
 <div class="start">
 	<div>
-		<h1>Welcome to {config.name} verification.</h1>
+		<h1>{config.name} 참가 신청</h1>
 	</div>
 	<div>
-		<p>First we need to verify your account!</p>
+		<p>osu! 계정 연동</p>
 		<p>
-			You will be asked to login with your osu! account first, and then with your Discord account.
+			먼저 osu! 계정으로 로그인하여 본인 확인을 진행한 후, Discord 계정과 연결하여 서버에 참가할 수 있습니다.
 		</p>
-		<p>Your osu! account information will be used to:</p>
+		<p>osu! 계정 정보는 다음 용도로 사용됩니다:</p>
 		<ul>
-			<li>Verify that you own this account, to prevent impersonation of others</li>
-			<li>Attach your osu! username as a nickname in the discord server</li>
+			<li>타인 사칭 방지</li>
+			<li>Discord 서버에서 osu! 닉네임 확인</li>
 		</ul>
-		<p>Your Discord account information will be used to:</p>
+		<p>Discord 계정 정보는 다음 용도로 사용됩니다:</p>
 		<ul>
-			<li>Join your account to the server, if you haven't yet</li>
-			<li>Change the nickname on the discord server to your osu! username</li>
-			<li>Add role(s) to your user on the server on behalf of the host.</li>
+			<li>아직 Discord 서버에 참가하지 않은 경우 서버 참가</li>
+			<li>서버용 닉네임을 osu! 닉네임으로 변경</li>
+			<li>호스트 대신 Discord 서버 내 역할 부여</li>
 		</ul>
 	</div>
-	<div>
-		<p>
-			This web site is not endorsed by, directly affiliated with, maintained, authorized, or
-			sponsored by osu!, ppy, or Discord. All product and company names are the registered
-			trademarks of their original owners.
-		</p>
-		<p>This is an <strong>unofficial</strong> server.</p>
-		<p>By proceeding you will agree to the <strong>functional</strong> use of cookies.</p>
-	</div>
-	<a href="/auth/osu" class="flex button osu"> Log in with osu! </a>
+	<a href="/auth/osu" class="flex button osu"> osu!로 로그인 </a>
 	{#if data.error}
 		<p style="color:#FF4C4C; font-weight:bold; font-size: 1.2rem">{data.error}</p>
 	{/if}

@@ -31,6 +31,7 @@ interface SessionData {
 		id?: string;
 		state?: string;
 		accessToken?: string;
+		regionRoleId?: string;
 	};
 	error?: string;
 	isReady?: boolean;

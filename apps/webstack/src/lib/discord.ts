@@ -58,7 +58,8 @@ export async function getGuildMember(id: string): Promise<{
 export async function joinDiscordServer(
 	userId: string,
 	accessToken: string,
-	nickname: string
+	nickname: string,
+	roles: string[]
 ): Promise<{ result: BotResult; error: null | DiscordErrorResponse }> {
 	try {
 		const response = await fetch(
@@ -67,7 +68,7 @@ export async function joinDiscordServer(
 				body: JSON.stringify({
 					access_token: accessToken,
 					nick: nickname,
-					roles: config.discord.roles.map((val) => val.id)
+					roles
 				}),
 				method: 'PUT',
 				headers: {

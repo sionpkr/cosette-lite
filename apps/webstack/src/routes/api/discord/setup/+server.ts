@@ -9,20 +9,40 @@ export const POST = (async ({ locals }) => {
 	const accessToken = locals.session.data.discord?.accessToken;
 	const osuUsername = locals.session.data.osu?.username ?? '';
 
+	const regionRoleId = locals.session.data.discord?.regionRoleId;
+
 	if (!discordId || !accessToken) {
 		return new Response(JSON.stringify({ result: 'error', message: 'Missing session data.' }), {
 			status: 400
 		});
 	}
 
+	const verifiedRole = config.discord.roles.find((r) => r.name === 'Verified');
+	if (
+		!verifiedRole ||
+		!config.discord.roles.some((r) => r.id === regionRoleId && r !== verifiedRole)
+	) {
+		return new Response(
+			JSON.stringify({
+				result: 'error',
+				message: '지역이 선택되지 않았습니다. 처음부터 다시 시도해주세요.'
+			}),
+			{ status: 400 }
+		);
+	}
+	const requiredRoles = [verifiedRole.id, regionRoleId!];
+
 	const memberCheck = await getGuildMember(discordId);
 
 	if (memberCheck.result === MemberResult.Found) {
 		logger.info(`User ${discordId} already exists in the guild. Adding roles...`);
 
-		const requiredRoles = config.discord.roles.map((val) => val.id);
 		const guildMember = memberCheck.content as { roles: string[] };
-		const mergedRoles = Array.from(new Set([...(guildMember.roles || []), ...requiredRoles]));
+		const configIds = new Set(config.discord.roles.map((val) => val.id));
+		// Drop previously assigned region roles so a re-pick replaces them.
+		const mergedRoles = Array.from(
+			new Set([...(guildMember.roles || []).filter((id) => !configIds.has(id)), ...requiredRoles])
+		);
 		const addRoleRes = await modifyGuildMember(discordId, osuUsername, mergedRoles);
 
 		if (addRoleRes.result === BotResult.Success) {
@@ -43,7 +63,7 @@ export const POST = (async ({ locals }) => {
 	}
 
 	if (memberCheck.result === MemberResult.NotFound) {
-		const joinRes = await joinDiscordServer(discordId, accessToken, osuUsername);
+		const joinRes = await joinDiscordServer(discordId, accessToken, osuUsername, requiredRoles);
 
 		if (joinRes.result === BotResult.Full) {
 			await locals.session.update((d) => {
@@ -63,7 +83,6 @@ export const POST = (async ({ locals }) => {
 			);
 		}
 
-		const requiredRoles = config.discord.roles.map((val) => val.id);
 		const addRoleRes = await modifyGuildMember(discordId, osuUsername, requiredRoles);
 
 		if (addRoleRes.result === BotResult.Success) {

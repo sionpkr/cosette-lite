@@ -12,10 +12,10 @@
 
 <div class="start">
 	<div>
-		<h1>Welcome to {config.name}</h1>
+		<h1>{config.name} 참가 신청</h1>
 	</div>
 	<div>
-		<p>Your account is now verified. Welcome to the server!</p>
-		<p>You can now close this browser tab.</p>
+		<p>계정 인증이 완료되었습니다!</p>
+		<p>이제 이 탭을 닫으셔도 됩니다.</p>
 	</div>
 </div>

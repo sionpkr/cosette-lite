@@ -10,15 +10,15 @@
 
 <div id="start">
 	<div>
-		<h1>Manual verification required</h1>
-		<p>Please ping the @Moderators role in the verification channel with the following text:</p>
-		<p>The reason I require manual verification is: {data.reason}</p>
+		<h1>수동 검증 필요</h1>
+		<p>다음 텍스트로 검증 채널에서 @garalulu 를 멘션해주세요:</p>
+		<p>수동 검증 사유: {data.reason}</p>
 		<p style="margin-top: 0.75rem; font-size: 0.9rem; opacity: 0.3;">
 			<a
 				href="/checks/discord"
 				aria-label="Proceed to verification anyway"
 				style="color: inherit; text-decoration: underline;"
-				>I understand this server is for staff only and not players — verify me anyway</a
+				>verify me anyway</a
 			>
 		</p>
 	</div>
