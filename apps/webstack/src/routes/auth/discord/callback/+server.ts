@@ -89,5 +89,5 @@ export const GET = (async ({ url, locals }) => {
 
 	logger.info(`Prepared setup for user ${meData.user.username} ${meData.user.id}`);
 
-	redirect(302, '/loading');
+	redirect(302, '/checks/region');
 }) satisfies RequestHandler;

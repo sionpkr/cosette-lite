@@ -30,7 +30,8 @@ const PROV = {
 	38: '경상남도',
 	39: '제주특별자치도'
 };
-const lookup = (tbl, name, exact) => {
+const MEMBERS = { ...SEOUL, ...GG };
+const lookup =(tbl, name, exact) => {
 	for (const [r, list] of Object.entries(tbl))
 		for (const n of list.split(' ')) if (exact ? name === n : name.startsWith(n)) return r;
 	throw new Error('unmapped ' + name);
@@ -95,3 +96,5 @@ console.log('export const REGION_MAP_VIEWBOX = "0 0 530 560";');
 console.log(
 	'export const regionPaths: { name: string; d: string }[] = ' + JSON.stringify(regions) + ';'
 );
+const members = Object.fromEntries(Object.entries(MEMBERS).map(([k, v]) => [k, v.split(' ')]));
+console.log('export const regionMembers: Record<string, string[]> = ' + JSON.stringify(members) + ';');
