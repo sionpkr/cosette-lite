@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { regionPaths, REGION_MAP_VIEWBOX } from '$lib/regionMap';
+	import { regionPaths, muniPaths, REGION_MAP_VIEWBOX } from '$lib/regionMap';
 
 	interface Props {
 		/** region name -> role id (only selectable regions) */
@@ -12,60 +12,32 @@
 	const W = 530;
 	const H = 560;
 	const MAX = 16;
+	// Zoom levels: region names appear once they fit, then city/district borders and names take over.
+	const MUNI_BORDER_ZOOM = 2.5;
+	const MUNI_LABEL_ZOOM = 4.5;
+	const REGION_LABEL_FONT = 20; // user units at zoom 1 (kept constant on screen via /s)
+	const MUNI_LABEL_FONT = 16;
 
-	// Bounding box per region, ignoring tiny far-off islands (rings < 5% of the biggest ring's box).
-	const bboxes = new Map(
-		regionPaths.map(({ name, d }) => {
-			const rings = d
-				.split('M')
-				.filter(Boolean)
-				.map((r) => {
-					const n = r.match(/-?\d+\.?\d*/g)!.map(Number);
-					const xs = n.filter((_, i) => i % 2 === 0);
-					const ys = n.filter((_, i) => i % 2 === 1);
-					const b = {
-						x0: Math.min(...xs),
-						x1: Math.max(...xs),
-						y0: Math.min(...ys),
-						y1: Math.max(...ys)
-					};
-					return { ...b, a: (b.x1 - b.x0) * (b.y1 - b.y0) };
-				});
-			const big = Math.max(...rings.map((r) => r.a));
-			const keep = rings.filter((r) => r.a >= big * 0.05);
-			return [
-				name,
-				{
-					x0: Math.min(...keep.map((r) => r.x0)),
-					x1: Math.max(...keep.map((r) => r.x1)),
-					y0: Math.min(...keep.map((r) => r.y0)),
-					y1: Math.max(...keep.map((r) => r.y1))
-				}
-			];
-		})
-	);
-	let smooth = $state(false);
-
-	// Animate so the selected region is centred and fits the frame (with margin).
-	$effect(() => {
-		const b = bboxes.get(selectedName);
-		if (!b) return;
-		const ns = clamp(0.75 * Math.min(W / (b.x1 - b.x0), H / (b.y1 - b.y0)), 1, MAX);
-		smooth = true;
-		tx = clamp(W / 2 - ((b.x0 + b.x1) / 2) * ns, W * (1 - ns), 0);
-		ty = clamp(H / 2 - ((b.y0 + b.y1) / 2) * ns, H * (1 - ns), 0);
-		s = ns;
-	});
+	const munisByRegion = new Map<string, (typeof muniPaths)[number][]>();
+	for (const m of muniPaths) munisByRegion.set(m.region, [...(munisByRegion.get(m.region) ?? []), m]);
+	const bboxes = new Map(regionPaths.map((r) => [r.name, r.bbox]));
 
 	let svg: SVGSVGElement;
 	let s = $state(1);
 	let tx = $state(0);
 	let ty = $state(0);
+	let smooth = $state(false);
 	let hoverName = $state('');
 	let moved = false;
 
 	const selectedName = $derived([...idByName].find(([, id]) => id === selectedId)?.[0] ?? '');
 	const label = $derived(hoverName || selectedName);
+	// Label fits its shape when its width (font/s per char) is below the shape's width.
+	const fits = (name: string, w: number, font: number) => (name.length * font) / s <= w * 1.1;
+	const showRegionLabel = (r: (typeof regionPaths)[number]) =>
+		s < MUNI_LABEL_ZOOM + 1.5 && s >= 1.5 && fits(r.name, r.w, REGION_LABEL_FONT);
+	const showMuniLabel = (m: (typeof muniPaths)[number]) =>
+		s >= MUNI_LABEL_ZOOM && fits(m.name, m.w, MUNI_LABEL_FONT);
 
 	const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -78,9 +50,19 @@
 		s = ns;
 	}
 
+	// Animate so the selected region is centred and fits the frame (with margin).
+	$effect(() => {
+		const b = bboxes.get(selectedName);
+		if (!b) return;
+		const ns = clamp(0.75 * Math.min(W / (b[2] - b[0]), H / (b[3] - b[1])), 1, MAX);
+		smooth = true;
+		tx = clamp(W / 2 - ((b[0] + b[2]) / 2) * ns, W * (1 - ns), 0);
+		ty = clamp(H / 2 - ((b[1] + b[3]) / 2) * ns, H * (1 - ns), 0);
+		s = ns;
+	});
+
 	function toView(e: { clientX: number; clientY: number }) {
-		const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM()!.inverse());
-		return p;
+		return new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM()!.inverse());
 	}
 
 	// Non-passive wheel listener so the page doesn't scroll while zooming.
@@ -130,25 +112,58 @@
 			onpointerleave={() => (drag = null)}
 		>
 			<g class="view" class:smooth style="transform: translate({tx}px, {ty}px) scale({s})">
-				{#each regionPaths as p (p.name)}
+				<!-- fills: one group per role region (hover/select by region only) -->
+				{#each regionPaths as r (r.name)}
 					<g
 						class="region"
-						class:selected={idByName.get(p.name) === selectedId}
+						class:selected={idByName.get(r.name) === selectedId}
 						role="button"
 						tabindex="0"
-						aria-label={p.name}
-						onmouseenter={() => (hoverName = p.name)}
+						aria-label={r.name}
+						onmouseenter={() => (hoverName = r.name)}
 						onmouseleave={() => (hoverName = '')}
-						onfocus={() => (hoverName = p.name)}
+						onfocus={() => (hoverName = r.name)}
 						onblur={() => (hoverName = '')}
-						onclick={() => pick(p.name)}
-						onkeydown={(e) => e.key === 'Enter' && (selectedId = idByName.get(p.name) ?? '')}
+						onclick={() => pick(r.name)}
+						onkeydown={(e) => e.key === 'Enter' && (selectedId = idByName.get(r.name) ?? '')}
 					>
-						<!-- outline layer: wide stroke; fill layer on top hides it along inner city seams -->
-						<path d={p.d} class="outline" />
-						<path d={p.d} class="fill" />
+						{#each munisByRegion.get(r.name) ?? [] as m (m.d)}
+							<path d={m.d} />
+						{/each}
 					</g>
 				{/each}
+
+				<!-- city/district borders: appear when zoomed in -->
+				{#if s >= MUNI_BORDER_ZOOM}
+					<g class="muni-border">
+						{#each muniPaths as m (m.d)}
+							<path d={m.d} />
+						{/each}
+					</g>
+				{/if}
+
+				<!-- region borders: always on, thicker -->
+				<g class="region-border">
+					{#each regionPaths as r (r.name)}
+						<path d={r.d} />
+					{/each}
+				</g>
+
+				<!-- labels -->
+				<g class="labels" style="font-size: {REGION_LABEL_FONT / s}px; stroke-width: {3 / s}px">
+					{#each regionPaths as r (r.name)}
+						{#if showRegionLabel(r)}
+							<text x={r.c[0]} y={r.c[1]}>{r.name}</text>
+						{/if}
+					{/each}
+				</g>
+				<g class="labels" style="font-size: {MUNI_LABEL_FONT / s}px; stroke-width: {2.5 / s}px">
+					{#each muniPaths as m (m.d)}
+						{#if showMuniLabel(m)}
+							<text x={m.c[0]} y={m.c[1]}>{m.name}</text>
+						{/if}
+					{/each}
+				</g>
 			</g>
 		</svg>
 		<div class="zoom">
@@ -179,6 +194,11 @@
 	.view.smooth {
 		transition: transform 0.6s ease-in-out;
 	}
+	path {
+		vector-effect: non-scaling-stroke; /* constant line width at any zoom */
+		stroke-linejoin: round;
+		fill-rule: evenodd;
+	}
 	.region {
 		cursor: pointer;
 		outline: none;
@@ -191,19 +211,33 @@
 	.region.selected {
 		--c: #5865f2;
 	}
-	path {
-		vector-effect: non-scaling-stroke; /* constant line width at any zoom */
-		stroke-linejoin: round;
-	}
-	.outline {
-		fill: #fff;
-		stroke: #fff;
-		stroke-width: 3.5;
-	}
-	.fill {
+	.region path {
 		fill: var(--c);
-		stroke: var(--c);
-		stroke-width: 1.5;
+		stroke: var(--c); /* hides hairline seams between cities of one region */
+		stroke-width: 0.8;
+	}
+	.muni-border path,
+	.region-border path {
+		fill: none;
+		pointer-events: none;
+		stroke: #fff;
+	}
+	.muni-border path {
+		stroke-width: 1.2;
+		stroke-opacity: 0.9;
+	}
+	.region-border path {
+		stroke-width: 3;
+	}
+	.labels {
+		pointer-events: none;
+		fill: #fff;
+		stroke: #111827;
+		paint-order: stroke;
+		stroke-linejoin: round;
+		text-anchor: middle;
+		dominant-baseline: central;
+		font-weight: 600;
 	}
 	.zoom {
 		position: absolute;
