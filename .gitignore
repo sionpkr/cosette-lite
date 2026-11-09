@@ -87,3 +87,5 @@ apps/webstack/.vercel
 .turbo
 apps/webstack/.vercel
 .wrangler
+.vercel
+.env*
