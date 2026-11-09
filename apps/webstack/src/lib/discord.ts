@@ -109,18 +109,22 @@ export async function modifyGuildMember(
 	roles?: string[]
 ): Promise<{ result: BotResult; error: null | DiscordErrorResponse }> {
 	try {
-		const response = await fetch(
-			`https://discord.com/api/v10/guilds/${config.discord.guildId}/members/${userId}`,
-			{
-				body: JSON.stringify({ nick, roles }),
+		const patch = (body: object) =>
+			fetch(`https://discord.com/api/v10/guilds/${config.discord.guildId}/members/${userId}`, {
+				body: JSON.stringify(body),
 				method: 'PATCH',
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
 					'X-Audit-Log-Reason': `Updated user ${userId} from cosette`
 				}
-			}
-		);
+			});
+		let response = await patch({ nick, roles });
+		// Nick can't be changed for the guild owner / higher-role members (403); retry roles only.
+		if (response.status === 403 && roles) {
+			logger.warn(`Nick update forbidden for ${userId}, retrying with roles only`);
+			response = await patch({ roles });
+		}
 
 		switch (response.status) {
 			case 200:
