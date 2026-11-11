@@ -47,7 +47,7 @@
 					{/each}
 				</select>
 			</p>
-			<p>서울과 경기도는 다음과 같이 나뉩니다:</p>
+			<p>단, 서울과 경기도는 다음과 같이 나뉩니다:</p>
 			<ul>
 				{#each Object.entries(regionMembers) as [name, list] (name)}
 					<li><strong>{name}</strong>: {list.join(', ')}</li>

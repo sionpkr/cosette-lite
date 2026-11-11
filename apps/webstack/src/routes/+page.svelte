@@ -11,11 +11,11 @@
 </script>
 
 <svelte:head>
-	<meta property="og:title" content="{config.name} verification" />
+	<meta property="og:title" content="{config.name} 참가 신청" />
 	<meta property="og:type" content="website" />
 	<meta
 		property="og:description"
-		content="Verify your account easily using your osu! and Discord accounts for access to {config.name}."
+		content="osu! 계정과 Discord 계정을 연결하여 {config.name}에 참가하세요."
 	/>
 </svelte:head>
 
@@ -40,7 +40,7 @@
 			<li>호스트 대신 Discord 서버 내 역할 부여</li>
 		</ul>
 	</div>
-	<a href="/auth/osu" class="flex button osu"> osu!로 로그인 </a>
+	<a href="/auth/osu" class="flex button osu"> osu! 로그인 </a>
 	{#if data.error}
 		<p style="color:#FF4C4C; font-weight:bold; font-size: 1.2rem">{data.error}</p>
 	{/if}

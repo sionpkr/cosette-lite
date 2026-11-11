@@ -32,5 +32,5 @@
 			>
 		</p>
 	</div>
-	<a href="/auth/discord" class="flex button discord"> Log in with Discord! </a>
+	<a href="/auth/discord" class="flex button discord"> Discord 로그인 </a>
 </div>
