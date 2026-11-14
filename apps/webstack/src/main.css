@@ -1,12 +1,10 @@
 html,
-body {
-	min-height: 100%;
+body,
+.start {
+	height: 100%;
 }
 
 html {
-	color-scheme: light;
-	background-color: #ffffff;
-	color: #343b49;
 	font-family:
 		'Open Sans',
 		-apple-system,
@@ -23,21 +21,14 @@ body {
 }
 
 a {
-	color: #0054a6;
+	color: #000;
 }
 
-.site-shell {
-	padding-block: 2rem 4rem;
-}
-
-.tournament-banner {
-	display: block;
-	width: 100%;
-	height: auto;
-}
-
-main {
-	margin-top: 2rem;
+.grid-container {
+	height: 100%;
+	width: min-content;
+	display: grid;
+	align-content: center;
 }
 
 .flex {
@@ -54,8 +45,32 @@ main {
 }
 
 .container {
-	width: min(90%, 1100px);
-	margin-inline: auto;
+	width: 60%;
+	margin: auto;
+}
+
+@media (max-width: 1241px) {
+	.container {
+		width: calc(1241px * 0.6);
+		margin: auto;
+	}
+}
+
+@media (max-width: 744px) {
+	.container {
+		width: auto;
+		margin: auto 5%;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	html {
+		background-color: #000000;
+		color: #cecece;
+	}
+	a {
+		color: white;
+	}
 }
 
 .button {
@@ -96,6 +111,12 @@ main {
 	border-radius: 50%;
 	animation: spin 1s linear infinite;
 	margin: 1rem auto 2rem auto;
+}
+
+@media (prefers-color-scheme: dark) {
+	.spinner {
+		border-color: rgba(255, 255, 255, 0.15);
+	}
 }
 
 @keyframes spin {
