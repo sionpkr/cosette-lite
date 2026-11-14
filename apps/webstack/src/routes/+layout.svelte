@@ -49,7 +49,7 @@
 		{/if}
 	</main>
 	<footer class="text-centered">
-		<p>참가 신청 마감: 2026년 12월 7일 23:59:59 (UTC+9)</p>
+		<p>참가 신청 마감: 2026년 11월 29일 23:59:59 (UTC+9)</p>
 		{#if secondsLeft > 0}
 			<p role="timer" aria-label="참가 신청 마감까지 남은 시간">
 				남은 시간: {days}일 {hours}시간 {minutes}분 {seconds}초

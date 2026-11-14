@@ -11,7 +11,7 @@ afterEach(() => vi.useRealTimers());
 
 describe('registration deadline', () => {
 	it('accepts the entire final second and closes at midnight UTC+9', () => {
-		expect(registrationSecondsLeft(Date.parse('2026-12-07T23:59:59+09:00'))).toBe(1);
+		expect(registrationSecondsLeft(Date.parse('2026-11-29T23:59:59+09:00'))).toBe(1);
 		expect(registrationSecondsLeft(registrationDeadline - 1)).toBe(1);
 		expect(registrationSecondsLeft(registrationDeadline)).toBe(0);
 		expect(registrationSecondsLeft(registrationDeadline + 1000)).toBe(0);
